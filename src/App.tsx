@@ -11,8 +11,13 @@ function App() {
   const [dogImage, setDogImage] = useState('')
   const [breeds, setBreeds] = useState<string[]>([])
   const [selectedBreed, setSelectedBreed] = useState('all')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const fetchDogImage = async () => {
+    setLoading(true)
+    setError('')
+
     try {
       const url =
         selectedBreed === 'all'
@@ -22,11 +27,15 @@ function App() {
       const response = await fetch(url)
       const data: DogApiResponse = await response.json()
 
-      if (typeof data.message === 'string') {
-        setDogImage(data.message)
+      if (!response.ok || data.status !== 'success' || typeof data.message !== 'string') {
+        throw new Error('Unable to fetch dog image.')
       }
-    } catch (error) {
-      console.error('Error fetching dog image:', error)
+
+      setDogImage(data.message)
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -41,8 +50,8 @@ function App() {
       if (typeof data.message === 'object') {
         setBreeds(Object.keys(data.message))
       }
-    } catch (error) {
-      console.error('Error fetching breeds:', error)
+    } catch {
+      console.error('Unable to fetch dog breeds.')
     }
   }
 
@@ -79,14 +88,18 @@ function App() {
         </select>
 
         <div className="dog-image">
-          {dogImage ? (
-            <img src={dogImage} alt="Random dog" />
+          {loading ? (
+            <p>Loading...</p>
+          ) : error ? (
+            <p>{error}</p>
           ) : (
-            <p>Dog image will appear here</p>
+            <img src={dogImage} alt="Random dog" />
           )}
         </div>
 
-        <button onClick={fetchDogImage}>Fetch Data Again</button>
+        <button onClick={fetchDogImage} disabled={loading}>
+          {loading ? 'Loading...' : 'Fetch Data Again'}
+        </button>
       </div>
     </div>
   )
